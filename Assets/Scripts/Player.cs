@@ -8,6 +8,7 @@ public class Player : MonoBehaviour
     public float groundAccel = 60f;
     public float airAccel = 30f;
     public float jumpSpeed = 12f;
+    private float maxVelocity = 45f;
     public Web currentWeb;
     public bool isGrounded = false;
     public bool isDead = false;
@@ -42,87 +43,112 @@ public class Player : MonoBehaviour
         UpdateJumpBuffer();
         UpdateJump();
         ApplyGravity();
-        ApplyPosition();
-        CheckCollisions();
+        ClampVelocity();
+        ApplyPositionWithCollision();
     }
     // --- Collision Handling ---
-    void CheckCollisions()
+    void ApplyPositionWithCollision()
     {
-        // 플레이어 콜라이더 크기
+        if (isDead) return;
+        
+        // 1. 일단 이동!
+        Vector2 deltaPosition = velocity * Time.fixedDeltaTime;
+        Vector2 previousPosition = position;
+        position += deltaPosition;
+        transform.position = position;
+        
+        // 2. 충돌 검사
         Vector2 boxSize = new Vector2(playerBoxSizeX, playerBoxSizeY);
         Collider2D[] hits = Physics2D.OverlapBoxAll(transform.position, boxSize, 0f);
+        
+        bool hasBlockCollision = false;
+        
         foreach (var col in hits)
         {
-            Debug.Log($"Collision with: {col.gameObject.name}");
             if (col.gameObject == this.gameObject) continue;
             
-            // Block: 충돌 방향에 따른 위치 보정
+            // 블록 충돌 체크
             if (col.gameObject.CompareTag("Block") || col.gameObject.name.Contains("Block"))
             {
-                HandleBlockCollision(col, boxSize);
+                hasBlockCollision = true;
             }
-            // Hazard: 사망 처리 (가시, 함정 등)
-            else if (col.gameObject.CompareTag("Hazard") || col.gameObject.name.Contains("Spike") || col.gameObject.name.Contains("Hazard"))
+            // 블록이 아닌 것들은 바로 처리
+            else
             {
-                Die();
+                // Hazard: 사망 처리
+                if (col.gameObject.CompareTag("Hazard") || col.gameObject.name.Contains("Spike") || col.gameObject.name.Contains("Hazard"))
+                {
+                    Die();
+                }
+                // Checkpoint: 체크포인트 활성화
+                else if (col.gameObject.CompareTag("Checkpoint") || col.gameObject.name.Contains("Checkpoint"))
+                {
+                    ActivateCheckpoint(col.gameObject);
+                }
             }
-            // Checkpoint: 체크포인트 활성화
-            else if (col.gameObject.CompareTag("Checkpoint") || col.gameObject.name.Contains("Checkpoint"))
-            {
-                ActivateCheckpoint(col.gameObject);
-            }
+        }
+        
+        // 3. 블록 충돌이 있으면 separation axis 사용
+        if (hasBlockCollision)
+        {
+            HandleBlockCollisionWithSeparationAxis(previousPosition, deltaPosition);
         }
     }
-    
-    void HandleBlockCollision(Collider2D blockCollider, Vector2 playerSize)
+
+    void HandleBlockCollisionWithSeparationAxis(Vector2 previousPosition, Vector2 deltaPosition)
     {
-        // 플레이어와 블록의 경계 정보
-        Bounds playerBounds = new Bounds(transform.position, playerSize);
-        Bounds blockBounds = blockCollider.bounds;
+        // X축 먼저 시도
+        position = previousPosition;
+        position.x += deltaPosition.x; // X축만 이동
+        transform.position = position;
         
-        // 겹친 영역 계산
-        float overlapLeft = playerBounds.max.x - blockBounds.min.x;
-        float overlapRight = blockBounds.max.x - playerBounds.min.x;
-        float overlapTop = blockBounds.max.y - playerBounds.min.y;
-        float overlapBottom = playerBounds.max.y - blockBounds.min.y;
-        
-        // 가장 작은 겹침을 찾아서 그 방향으로 분리
-        bool wasOnGround = isGrounded;
-        
-        if (overlapLeft < overlapRight && overlapLeft < overlapTop && overlapLeft < overlapBottom)
+        if (CheckBlockCollision())
         {
-            // 왼쪽에서 충돌 - 플레이어를 왼쪽으로 밀어냄
-            position.x = blockBounds.min.x - playerSize.x / 2f;
+            // X축 충돌 - 이전 X 위치로 복원하고 X 속도 제거
+            position.x = previousPosition.x;
             velocity.x = 0f;
+            transform.position = position;
         }
-        else if (overlapRight < overlapTop && overlapRight < overlapBottom)
+        
+        // Y축 이동
+        position.y += deltaPosition.y;
+        transform.position = position;
+        
+        if (CheckBlockCollision())
         {
-            // 오른쪽에서 충돌 - 플레이어를 오른쪽으로 밀어냄
-            position.x = blockBounds.max.x + playerSize.x / 2f;
-            velocity.x = 0f;
-        }
-        else if (overlapTop < overlapBottom)
-        {
-            // 위쪽에서 충돌 - 플레이어를 위로 밀어냄 (블록 위에 올림)
-            position.y = blockBounds.max.y + playerSize.y / 2f;
-            if (velocity.y <= 0) // 떨어지고 있었다면 착지
+            // Y축 충돌 - 이전 Y 위치로 복원
+            position.y = previousPosition.y;
+            
+            if (velocity.y <= 0f)
             {
+                // 바닥 충돌 (착지)
                 velocity.y = 0f;
                 isGrounded = true;
             }
-        }
-        else
-        {
-            // 아래쪽에서 충돌 - 플레이어를 아래로 밀어냄 (천장에 머리 박음)
-            position.y = blockBounds.min.y - playerSize.y / 2f;
-            if (velocity.y > 0) // 위로 올라가고 있었다면 속도만 제거
+            else
             {
+                // 천장 충돌
                 velocity.y = 0f;
             }
-            // 천장에서는 isGrounded = false 유지 (중요!)
+            transform.position = position;
         }
+    }
+
+    bool CheckBlockCollision()
+    {
+        Vector2 boxSize = new Vector2(playerBoxSizeX, playerBoxSizeY);
+        Collider2D[] hits = Physics2D.OverlapBoxAll(transform.position, boxSize, 0f);
         
-        transform.position = position;
+        foreach (var col in hits)
+        {
+            if (col.gameObject == this.gameObject) continue;
+            
+            if (col.gameObject.CompareTag("Block") || col.gameObject.name.Contains("Block"))
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     void Die()
@@ -259,11 +285,21 @@ public class Player : MonoBehaviour
             velocity.y += gravity * Time.fixedDeltaTime;
     }
 
-    void ApplyPosition()
+    void ClampVelocity()
     {
         if (isDead) return;
-        position += velocity * Time.fixedDeltaTime;
-        transform.position = position;
+        // 웹/로프 사용 중일 때는 조금 더 관대하게 (스윙감을 위해)
+        if (currentWeb != null && currentWeb.isAttached)
+        {
+            float webMaxVelocity = maxVelocity * 1.2f; // 20% 더 허용
+            velocity = Vector2.ClampMagnitude(velocity, webMaxVelocity);
+        }
+        else
+        {
+            // 방향을 유지하면서 전체 크기만 제한
+            float maxSpeed = maxVelocity;
+            velocity = Vector2.ClampMagnitude(velocity, maxSpeed);
+        }
     }
 
     // --- Web/Rope ---
