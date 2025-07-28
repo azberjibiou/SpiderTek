@@ -13,9 +13,17 @@ public class Web : MonoBehaviour
     private Player player;
     private LineRenderer lineRenderer;
     private float currentLength = 0f;
-    private const float extendSpeed = 30f;
+    private const float extendSpeed = 100f;
     private const float ropeForce = 100f;      // 로프의 제약력 (강함)
-    private const float webForce = 60f;       // 거미줄의 장력 (일정함)
+    private const float webForce = 300f;       // 거미줄의 장력 (강함)
+    private const float minWebLength = 2f;     // 최소 거미줄 길이 (이하면 파괴)
+    private const float reducedTangentSpeed = 0.2f; // 접선 속도 감소 비율 (20% 유지)
+    
+    // 새로운 예측 충돌 시스템
+    private bool hasPredictedCollision = false;
+    private Vector2 predictedHitPoint;
+    private float timeToCollision = 0f;
+    private float collisionTimer = 0f;
     
     // --- Unity Methods ---
     void Start()
@@ -54,6 +62,13 @@ public class Web : MonoBehaviour
             if (isAttached)
             {
                 currentLength = Vector2.Distance(currentPlayerPos, endPoint);
+                
+                // 거미줄이 너무 짧아지면 파괴
+                if (currentLength < minWebLength)
+                {
+                    Destroy(gameObject);
+                    return;
+                }
             }
         }
     }
@@ -82,6 +97,9 @@ public class Web : MonoBehaviour
         // 발사 방향 계산
         Vector2 direction = (targetPos - startPos).normalized;
         velocity = direction * extendSpeed;
+        
+        // 충돌 예측 수행
+        PredictCollision();
     }
     
     public void AddForce(Vector2 force)
@@ -95,7 +113,20 @@ public class Web : MonoBehaviour
     
     public void Extend()
     {
-        // 줄의 끝점 발사
+        // 충돌 예측이 있는 경우 타이머 업데이트
+        if (hasPredictedCollision)
+        {
+            collisionTimer += Time.fixedDeltaTime;
+            
+            // 예상 충돌 시간에 도달하면 부착
+            if (collisionTimer >= timeToCollision)
+            {
+                AttachToSurface(predictedHitPoint);
+                return;
+            }
+        }
+        
+        // 웹 발사체 이동
         transform.position += (Vector3)(velocity * Time.fixedDeltaTime);
         currentLength = Vector2.Distance(startPoint, transform.position);
         
@@ -105,42 +136,57 @@ public class Web : MonoBehaviour
             Destroy(gameObject);
             return;
         }
+    }
+    
+    // 발사 시 충돌을 미리 예측하는 함수
+    private void PredictCollision()
+    {
+        Vector2 direction = velocity.normalized;
+        float speed = velocity.magnitude;
         
-        // 충돌 검사 (벽이나 블록에 닿으면 부착)
-        Collider2D hitCollider = Physics2D.OverlapCircle(transform.position, 0.1f);
-        if (hitCollider != null && 
-            (hitCollider.gameObject.CompareTag("Block") || 
-             hitCollider.gameObject.name.Contains("Block")))
+        // 모든 충돌체를 검사하고 "Block" 태그만 필터링
+        RaycastHit2D[] allHits = Physics2D.RaycastAll(startPoint, direction, maxLength);
+        RaycastHit2D hit = new RaycastHit2D(); // 빈 hit 구조체
+        
+        foreach (var hitInfo in allHits)
         {
-            isAttached = true;
-            velocity = Vector2.zero;
-            
-            // 블록의 가장 가까운 표면에 부착
-            Vector2 webPosition = transform.position;
-            Vector2 blockCenter = hitCollider.bounds.center;
-            Vector2 blockSize = hitCollider.bounds.size;
-            
-            // Web이 블록의 어느 면에 가장 가까운지 계산
-            float distToLeft = Mathf.Abs(webPosition.x - (blockCenter.x - blockSize.x / 2f));
-            float distToRight = Mathf.Abs(webPosition.x - (blockCenter.x + blockSize.x / 2f));
-            float distToTop = Mathf.Abs(webPosition.y - (blockCenter.y + blockSize.y / 2f));
-            float distToBottom = Mathf.Abs(webPosition.y - (blockCenter.y - blockSize.y / 2f));
-            
-            float minDist = Mathf.Min(distToLeft, distToRight, distToTop, distToBottom);
-            
-            // 가장 가까운 면의 가장자리에 부착
-            if (minDist == distToLeft)
-                endPoint = new Vector2(blockCenter.x - blockSize.x / 2f, webPosition.y);
-            else if (minDist == distToRight)
-                endPoint = new Vector2(blockCenter.x + blockSize.x / 2f, webPosition.y);
-            else if (minDist == distToTop)
-                endPoint = new Vector2(webPosition.x, blockCenter.y + blockSize.y / 2f);
-            else
-                endPoint = new Vector2(webPosition.x, blockCenter.y - blockSize.y / 2f);
-            
-            // Web 오브젝트 위치도 부착점으로 이동
-            transform.position = endPoint;
+            if (hitInfo.collider.gameObject.CompareTag("Block"))
+            {
+                hit = hitInfo;
+                break; // 첫 번째 블록에서 중단
+            }
         }
+        
+        if (hit.collider != null)
+        {
+            hasPredictedCollision = true;
+            predictedHitPoint = hit.point;
+            
+            // 충돌까지의 거리와 시간 계산
+            float distanceToHit = Vector2.Distance(startPoint, hit.point);
+            timeToCollision = distanceToHit / speed;
+            
+            Debug.Log($"Block collision predicted at {predictedHitPoint} in {timeToCollision:F2} seconds");
+        }
+        else
+        {
+            hasPredictedCollision = false;
+            Debug.Log("No block collision predicted within range");
+        }
+    }
+    
+    // 웹을 표면에 부착하는 함수
+    private void AttachToSurface(Vector2 attachPoint)
+    {
+        isAttached = true;
+        velocity = Vector2.zero;
+        endPoint = attachPoint;
+        transform.position = attachPoint;
+        
+        // 웹 부착 시 플레이어 속도 조정
+        AdjustPlayerVelocityOnAttach();
+        
+        Debug.Log($"Web attached at predicted point: {attachPoint}");
     }
     
     // --- Private Methods ---
@@ -178,13 +224,12 @@ public class Web : MonoBehaviour
     private void ApplyRopePhysics(Vector2 playerPos, Vector2 ropeDirection, float distance)
     {
         // 로프: 원운동 물리 (구심력 = mv²/r)
-        
+
         // 로프 길이 제한 (플레이어가 로프 길이보다 멀리 가지 못하게)
         if (distance > currentLength)
         {
-            // 플레이어를 로프 길이 내로 당김
-            Vector2 constraintForce = ropeDirection * ropeForce * 2f; // 강한 제약력
-            AddForce(constraintForce);
+            Destroy(gameObject);
+            return;
         }
         
         // 원운동을 위한 구심력 계산
@@ -205,6 +250,33 @@ public class Web : MonoBehaviour
         }
     }
     
+    // 웹 부착 시 플레이어의 속도를 조정하는 함수
+    private void AdjustPlayerVelocityOnAttach()
+    {
+        if (player == null) return;
+        
+        Vector2 playerPos = player.transform.position;
+        Vector2 webDirection = (endPoint - playerPos).normalized; // 웹 방향 (중심 방향)
+        Vector2 tangentDirection = new Vector2(-webDirection.y, webDirection.x); // 접선 방향 (웹과 수직)
+        
+        Vector2 playerVelocity = player.velocity;
+        
+        // 속도를 웹 방향과 접선 방향으로 분해
+        float radialVelocity = Vector2.Dot(playerVelocity, webDirection); // 웹 방향 속도
+        float tangentialVelocity = Vector2.Dot(playerVelocity, tangentDirection); // 접선 방향 속도
+        
+        // 접선 방향 속도를 80% 감소 (에너지 손실)
+        tangentialVelocity *= reducedTangentSpeed; // 20%만 유지
+        
+        // 조정된 속도를 다시 합성
+        Vector2 newVelocity = radialVelocity * webDirection + tangentialVelocity * tangentDirection;
+        
+        player.velocity = newVelocity;
+        
+        Debug.Log($"Web attached - Original velocity: {playerVelocity} → Adjusted velocity: {newVelocity}");
+        Debug.Log($"Radial: {radialVelocity:F2}, Tangential: {tangentialVelocity:F2}");
+    }
+
     void OnDestroy()
     {
         // 웹이 파괴될 때 플레이어의 currentWeb 참조 해제
