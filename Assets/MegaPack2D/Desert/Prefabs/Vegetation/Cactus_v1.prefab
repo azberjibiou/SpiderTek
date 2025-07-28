@@ -1,0 +1,207 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &149732
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 476282}
+  - component: {fileID: 21208812}
+  - component: {fileID: 6879322}
+  m_Layer: 0
+  m_Name: Cactus_v1
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &476282
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149732}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 658, y: -253, z: 0}
+  m_LocalScale: {x: 0.3588046, y: 0.3588046, z: 0.3588046}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!212 &21208812
+SpriteRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149732}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 0
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_Sprite: {fileID: 21300000, guid: 1aa17000c7ffe6840b527299c387b77b, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_FlipX: 0
+  m_FlipY: 0
+  m_DrawMode: 0
+  m_Size: {x: 1, y: 1}
+  m_AdaptiveModeThreshold: 0.5
+  m_SpriteTileMode: 0
+  m_WasSpriteAssigned: 1
+  m_MaskInteraction: 0
+  m_SpriteSortPoint: 0
+--- !u!68 &6879322
+EdgeCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 149732}
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 0
+  m_UsedByEffector: 0
+  m_CompositeOperation: 0
+  m_CompositeOrder: 0
+  m_Offset: {x: 0, y: 0}
+  m_EdgeRadius: 0
+  m_Points:
+  - {x: -136.49619, y: -490.21307}
+  - {x: -138.50873, y: -382.504}
+  - {x: -207.1217, y: -388.37695}
+  - {x: -230.7254, y: -381.58627}
+  - {x: -260.3718, y: -373.25317}
+  - {x: -270.06943, y: -350.45355}
+  - {x: -286.65588, y: -285.30652}
+  - {x: -292.8871, y: -209.7849}
+  - {x: -291.08035, y: -133.84074}
+  - {x: -280.56808, y: -101.71221}
+  - {x: -271.5322, y: -95.902466}
+  - {x: -249.45741, y: -92.53222}
+  - {x: -217.7755, y: -126.94358}
+  - {x: -199.64091, y: -185.40662}
+  - {x: -187.33759, y: -275.46786}
+  - {x: -158.95303, y: -284.9309}
+  - {x: -132.803, y: -280.27142}
+  - {x: -131.63521, y: -123.091255}
+  - {x: -149.92154, y: -127.480606}
+  - {x: -167.73428, y: -127.05619}
+  - {x: -195.94347, y: -110.18116}
+  - {x: -212.6085, y: -69.46632}
+  - {x: -229.04407, y: 58.15242}
+  - {x: -234.77292, y: 175.43903}
+  - {x: -238.24905, y: 197.1973}
+  - {x: -239.95064, y: 248.68452}
+  - {x: -239.35951, y: 326.34537}
+  - {x: -233.71112, y: 434.04254}
+  - {x: -218.73099, y: 483.40237}
+  - {x: -209.7718, y: 505.13947}
+  - {x: -197.37645, y: 512.1594}
+  - {x: -180.72807, y: 512.9071}
+  - {x: -151.69933, y: 504.7028}
+  - {x: -136.26706, y: 484.59784}
+  - {x: -129.94792, y: 467.1185}
+  - {x: -129.6016, y: 430.7162}
+  - {x: -125.4372, y: 387.1526}
+  - {x: -124.84761, y: 331.362}
+  - {x: -123.15181, y: 241.839}
+  - {x: -117.570435, y: 109.266914}
+  - {x: -92.602646, y: 331.44244}
+  - {x: -76.20723, y: 392.4673}
+  - {x: -56.470913, y: 442.1258}
+  - {x: -39.24197, y: 458.98596}
+  - {x: -16.930063, y: 464.6693}
+  - {x: -1.5282408, y: 460.8461}
+  - {x: 21.859762, y: 451.21448}
+  - {x: 40.08536, y: 431.6137}
+  - {x: 54.057262, y: 384.09995}
+  - {x: 53.154335, y: 293.74268}
+  - {x: 52.76173, y: 243.36737}
+  - {x: 52.05017, y: 57.24005}
+  - {x: 107.6253, y: 54.277042}
+  - {x: 130.85187, y: 58.40014}
+  - {x: 143.70822, y: 63.19116}
+  - {x: 162.46642, y: 229.13498}
+  - {x: 179.66576, y: 321.25278}
+  - {x: 189.39452, y: 348.67365}
+  - {x: 205.94405, y: 390.0246}
+  - {x: 231.51198, y: 420.1656}
+  - {x: 244.715, y: 428.89288}
+  - {x: 264.62158, y: 428.40796}
+  - {x: 280.4053, y: 409.69836}
+  - {x: 290.23526, y: 372.55322}
+  - {x: 290.94122, y: 272.11902}
+  - {x: 283.6705, y: 182.04216}
+  - {x: 264.7053, y: 55.078457}
+  - {x: 243.78128, y: -24.626041}
+  - {x: 227.39641, y: -58.95405}
+  - {x: 191.36078, y: -69.68694}
+  - {x: 146.59306, y: -71.54307}
+  - {x: 97.850105, y: -74.629745}
+  - {x: 53.01706, y: -69.31764}
+  - {x: 57.143513, y: -195.2706}
+  - {x: 52.29972, y: -353.26022}
+  - {x: 49.950203, y: -490.18118}
+  m_AdjacentStartPoint: {x: 0, y: 0}
+  m_AdjacentEndPoint: {x: 0, y: 0}
+  m_UseAdjacentStartPoint: 0
+  m_UseAdjacentEndPoint: 0

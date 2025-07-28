@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 16ed72cc163a68640b7425157b79a6b5
+timeCreated: 1442586618
+licenseType: Store
+NativeFormatImporter:
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 46906
+  packageName: MegaPack2D | Black Games
+  packageVersion: 1.0
+  assetPath: Assets/MegaPack2D/Camera.controller
+  uploadId: 89028
