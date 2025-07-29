@@ -16,17 +16,19 @@ public class Web : MonoBehaviour
     private float initialLength = 0f;          // 웹 부착 시 초기 길이
     private const float extendSpeed = 100f;
     private const float ropeForce = 100f;      // 로프의 제약력 (강함)
-    private const float webForce = 300f;       // 거미줄의 장력 (강함)
+    private const float webForce = 200f;       // 거미줄의 장력 (강함)
     private const float springConstant = 100f;  // 로프의 용수철 상수 (k)
     private const float swingAcceleration = 15f; // 로프 스윙 시 접선 가속도
     private const float minWebLength = 2f;     // 최소 거미줄 길이 (이하면 파괴)
-    private const float reducedTangentSpeed = 0.2f; // 접선 속도 감소 비율 (20% 유지)
-    
+    private const float reducedTangentSpeed = 0.0f; // 접선 속도 감소 비율 (0% 유지)
+
     // 새로운 예측 충돌 시스템
     private bool hasPredictedCollision = false;
     private Vector2 predictedHitPoint;
     private float timeToCollision = 0f;
+    private bool attachableBlock = false; // 블록이 부착 가능한지 여부
     private float collisionTimer = 0f;
+    private bool nextDestroy = false; // 다음 프레임에서 파괴 여부
     
     // --- Unity Methods ---
     void Start()
@@ -92,6 +94,7 @@ public class Web : MonoBehaviour
     // --- Public Methods ---
     public void Initialize(Vector2 startPos, Vector2 targetPos, bool rope)
     {
+        Debug.Log($"Web initialized from {startPos} to {targetPos}, isRope: {rope}");
         startPoint = startPos;
         endPoint = targetPos;
         isRope = rope;
@@ -118,22 +121,45 @@ public class Web : MonoBehaviour
     
     public void Extend()
     {
+        Debug.Log($"Extending web from {startPoint} to {endPoint}, current length: {currentLength:F2}, nextDestroy: {nextDestroy}");
+        if (nextDestroy)
+        {
+            Destroy(gameObject);
+            return;
+        }
+        // 웹 발사체 이동
+        if(hasPredictedCollision)
+        {
+            // 예측된 충돌 시간까지 이동
+            transform.position += (Vector3)(velocity * Mathf.Min(Time.fixedDeltaTime, timeToCollision - collisionTimer));
+        }
+        else
+        {
+            // 예측된 충돌이 없으면 그냥 이동
+            transform.position += (Vector3)velocity * Time.fixedDeltaTime;
+        }
+        currentLength = Vector2.Distance(startPoint, transform.position);
+
         // 충돌 예측이 있는 경우 타이머 업데이트
         if (hasPredictedCollision)
         {
             collisionTimer += Time.fixedDeltaTime;
-            
+            Debug.Log($"Collision timer: {collisionTimer:F4}, Time to collision: {timeToCollision:F4}");
             // 예상 충돌 시간에 도달하면 부착
-            if (collisionTimer >= timeToCollision)
+            if (collisionTimer > timeToCollision)
             {
-                AttachToSurface(predictedHitPoint);
+                if (attachableBlock)
+                {
+                    AttachToSurface(predictedHitPoint);
+                }
+                else
+                {
+                    nextDestroy = true; // 다음 프레임에 파괴
+                }
                 return;
             }
         }
         
-        // 웹 발사체 이동
-        transform.position += (Vector3)(velocity * Time.fixedDeltaTime);
-        currentLength = Vector2.Distance(startPoint, transform.position);
         
         // 최대 길이에 도달하면 웹 파괴
         if (currentLength >= maxLength)
@@ -152,26 +178,26 @@ public class Web : MonoBehaviour
         // 모든 충돌체를 검사하고 "Block" 태그만 필터링
         RaycastHit2D[] allHits = Physics2D.RaycastAll(startPoint, direction, maxLength);
         RaycastHit2D hit = new RaycastHit2D(); // 빈 hit 구조체
-        
+        bool nonGrippable = false;
         foreach (var hitInfo in allHits)
         {
+            // NonGrippableBlock이면 건너뛰기
+            string objectName = hitInfo.collider.gameObject.name;
             if (hitInfo.collider.gameObject.CompareTag("Block"))
             {
                 hit = hitInfo;
+                attachableBlock = !objectName.Contains("nonGrippable");
                 break; // 첫 번째 블록에서 중단
             }
         }
-        
+
         if (hit.collider != null)
         {
             hasPredictedCollision = true;
             predictedHitPoint = hit.point;
-            
-            // 충돌까지의 거리와 시간 계산
             float distanceToHit = Vector2.Distance(startPoint, hit.point);
             timeToCollision = distanceToHit / speed;
-            
-            Debug.Log($"Block collision predicted at {predictedHitPoint} in {timeToCollision:F2} seconds");
+            Debug.Log($"Predicted collision at {predictedHitPoint}, time to collision: {timeToCollision:F4}, attachable: {attachableBlock}");
         }
         else
         {
@@ -192,13 +218,10 @@ public class Web : MonoBehaviour
         if (player != null)
         {
             initialLength = Vector2.Distance(player.transform.position, attachPoint);
-            Debug.Log($"Web attached at {attachPoint}, Initial length: {initialLength:F2}");
         }
         
         // 웹 부착 시 플레이어 속도 조정
         AdjustPlayerVelocityOnAttach();
-        
-        Debug.Log($"Web attached at predicted point: {attachPoint}");
     }
     
     // --- Private Methods ---
@@ -230,7 +253,6 @@ public class Web : MonoBehaviour
         Vector2 tensionForce = ropeDirection * webForce;
         AddForce(tensionForce);
         
-        Debug.Log($"[WEB PHYSICS] Tension force: {tensionForce}, Distance: {distance:F2}, Force magnitude: {webForce}");
     }
     
     private void ApplyRopePhysics(Vector2 playerPos, Vector2 ropeDirection, float distance)
@@ -295,8 +317,8 @@ public class Web : MonoBehaviour
         float radialVelocity = Vector2.Dot(playerVelocity, webDirection); // 웹 방향 속도
         float tangentialVelocity = Vector2.Dot(playerVelocity, tangentDirection); // 접선 방향 속도
 
-        // 거미줄의 접선 방향 속도를 80% 감소 (에너지 손실)
-        if(!isRope) tangentialVelocity *= reducedTangentSpeed; // 20%만 유지
+        // 거미줄의 접선 방향 속도를 100% 감소 (에너지 손실)
+        if(!isRope) tangentialVelocity *= reducedTangentSpeed; // 0%만 유지
         
         // 조정된 속도를 다시 합성
         Vector2 newVelocity = radialVelocity * webDirection + tangentialVelocity * tangentDirection;
