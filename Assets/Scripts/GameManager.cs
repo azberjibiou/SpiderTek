@@ -7,6 +7,9 @@ public class GameManager : MonoBehaviour
     // --- Singleton Pattern ---
     public static GameManager Instance { get; private set; }
     
+    // --- Static Fields ---
+    public static float gravity = -45f; // 게임 전체 중력값
+    
     // --- Fields ---
     public Checkpoint currentCheckpoint;
     public Vector2 playerStartPosition;
@@ -32,7 +35,7 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-    
+
     void Start()
     {
         // 플레이어 찾기 및 시작 위치 설정
@@ -41,7 +44,7 @@ public class GameManager : MonoBehaviour
         {
             playerStartPosition = player.transform.position;
         }
-        
+
         // 일시정지 UI 찾기 (Canvas 하위의 PausePanel 등)
         GameObject canvas = GameObject.Find("Canvas");
         if (canvas != null)

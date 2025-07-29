@@ -7,21 +7,23 @@ public class Player : MonoBehaviour
     public float maxMoveSpeed = 10f;
     public float groundAccel = 60f;
     public float airAccel = 30f;
+    public float ropeAccel = 10f; // 로프 사용 시 가속
     public float jumpSpeed = 12f;
-    private float maxVelocity = 45f;
+    public float maxVelocity = 45f;
     public Web currentWeb;
     public bool isGrounded = false;
     public bool isDead = false;
     public Vector2 position;
     public Vector2 velocity;
     public Vector2 acceleration;
-    private float gravity = -30f;
-    private float moveInput = 0f; // 입력값 저장
+    public float moveInput = 0f; // 입력값 저장 (Web.cs에서 접근 가능)
     private bool jumpPressed = false; // 점프 입력 저장
     private float jumpBufferTimer = 0f; // 점프 버퍼 타이머
     private const float jumpBufferTime = 0.1f; // 버퍼 지속 시간(초)
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
+
+    private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
 
     // --- Unity Methods ---
     void Start()
@@ -29,6 +31,10 @@ public class Player : MonoBehaviour
         position = transform.position;
         velocity = Vector2.zero;
         acceleration = Vector2.zero;
+        if(isDebugMode)
+        {
+            Time.timeScale = 0.3f; // 디버그 모드에서는 시간 흐름을 느리게 설정
+        }
     }
 
     void Update()
@@ -259,6 +265,21 @@ public class Player : MonoBehaviour
         if (isDead) return;
         float targetSpeed = moveInput * maxMoveSpeed;
         float accel = isGrounded ? groundAccel : airAccel;
+        
+        // 로프 사용 중일 때는 감속 금지, 제한된 가속만 허용
+        if (currentWeb != null && currentWeb.isAttached && currentWeb.isRope)
+        {
+            accel = ropeAccel;
+            float currentSpeedX = Mathf.Abs(velocity.x);
+
+            // 현재 속도가 targetSpeed보다 작고, 가속하려는 경우에만 허용
+            if (currentSpeedX > targetSpeed)
+            {
+                accel = 0; // 가/감속 차단
+                Debug.Log($"[PLAYER] Rope acceleration blocked - Current: {velocity.x:F2}, Target: {targetSpeed:F2}");
+            }
+        }
+        
         velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accel * Time.fixedDeltaTime);
     }
 
@@ -282,7 +303,7 @@ public class Player : MonoBehaviour
     {
         if (isDead) return;
         if (!isGrounded)
-            velocity.y += gravity * Time.fixedDeltaTime;
+            velocity.y += GameManager.gravity * Time.fixedDeltaTime;
     }
 
     void ClampVelocity()

@@ -13,9 +13,12 @@ public class Web : MonoBehaviour
     private Player player;
     private LineRenderer lineRenderer;
     private float currentLength = 0f;
+    private float initialLength = 0f;          // 웹 부착 시 초기 길이
     private const float extendSpeed = 100f;
     private const float ropeForce = 100f;      // 로프의 제약력 (강함)
     private const float webForce = 300f;       // 거미줄의 장력 (강함)
+    private const float springConstant = 100f;  // 로프의 용수철 상수 (k)
+    private const float swingAcceleration = 0f; // 로프 스윙 시 접선 가속도
     private const float minWebLength = 2f;     // 최소 거미줄 길이 (이하면 파괴)
     private const float reducedTangentSpeed = 0.2f; // 접선 속도 감소 비율 (20% 유지)
     
@@ -107,7 +110,9 @@ public class Web : MonoBehaviour
         // 사용자에게 장력을 작용
         if (player != null && isAttached)
         {
+            Vector2 oldVelocity = player.velocity;
             player.velocity += force * Time.fixedDeltaTime;
+            Vector2 deltaVelocity = player.velocity - oldVelocity;
         }
     }
     
@@ -183,6 +188,13 @@ public class Web : MonoBehaviour
         endPoint = attachPoint;
         transform.position = attachPoint;
         
+        // 부착 시 초기 길이 계산 (플레이어와 부착점 사이의 거리)
+        if (player != null)
+        {
+            initialLength = Vector2.Distance(player.transform.position, attachPoint);
+            Debug.Log($"Web attached at {attachPoint}, Initial length: {initialLength:F2}");
+        }
+        
         // 웹 부착 시 플레이어 속도 조정
         AdjustPlayerVelocityOnAttach();
         
@@ -201,7 +213,7 @@ public class Web : MonoBehaviour
         // 거미줄과 로프는 다른 물리 법칙 적용
         if (isRope)
         {
-            // 로프: 원운동 - 구심력 = mv²/r
+            // 로프: 팽팽한 실 (거리 제한)
             ApplyRopePhysics(playerPos, ropeDirection, distance);
         }
         else
@@ -218,36 +230,54 @@ public class Web : MonoBehaviour
         Vector2 tensionForce = ropeDirection * webForce;
         AddForce(tensionForce);
         
-        Debug.Log($"Web tension applied: {tensionForce}, distance: {distance}, currentLength: {currentLength}");
+        Debug.Log($"[WEB PHYSICS] Tension force: {tensionForce}, Distance: {distance:F2}, Force magnitude: {webForce}");
     }
     
     private void ApplyRopePhysics(Vector2 playerPos, Vector2 ropeDirection, float distance)
     {
-        // 로프: 원운동 물리 (구심력 = mv²/r)
-
-        // 로프 길이 제한 (플레이어가 로프 길이보다 멀리 가지 못하게)
-        if (distance > currentLength)
+        // 로프: 팽팽한 실 (거리 제한) + 회전 가속도
+        
+        // 1. 거리 제한 (팽팽한 실 효과) - 속도 조정만으로 제약 적용
+        if (distance > initialLength)
         {
-            Destroy(gameObject);
-            return;
-        }
-        
-        // 원운동을 위한 구심력 계산
-        Vector2 playerVelocity = player.velocity;
-        
-        // 접선 방향 속도 (원운동 속도)
-        Vector2 tangent = new Vector2(-ropeDirection.y, ropeDirection.x);
-        float tangentialSpeed = Vector2.Dot(playerVelocity, tangent);
-        
-        // 구심력 = mv²/r (여기서는 질량을 1로 가정)
-        if (distance > 0.1f) // 0으로 나누기 방지
-        {
-            float centripetalForce = (tangentialSpeed * tangentialSpeed) / distance;
-            Vector2 centripetalForceVector = ropeDirection * centripetalForce;
-            AddForce(centripetalForceVector);
+            // 로프에서 멀어지려는 속도 성분만 제거 (위치는 직접 수정하지 않음)
+            Vector2 playerVelocity = player.velocity;
+            float radialVelocity = Vector2.Dot(playerVelocity, -ropeDirection); // 로프에서 멀어지는 방향의 속도
             
-            Debug.Log($"Rope centripetal force: {centripetalForceVector}, tangentialSpeed: {tangentialSpeed}, distance: {distance}");
+            if (radialVelocity > 0) // 로프에서 멀어지려는 속도만 제거
+            {
+                Vector2 radialVelocityVector = -ropeDirection * radialVelocity;
+                player.velocity -= radialVelocityVector;
+                
+                Debug.Log($"[ROPE CONSTRAINT] Removed radial velocity: {radialVelocityVector}, New velocity: {player.velocity}");
+            }
         }
+        
+        // 2. 플레이어가 로프 길이보다 훨씬 멀리 있을 때 추가 보정 (강한 당기는 힘)
+        if (distance > initialLength * 1.1f) // 10% 이상 벗어나면 추가 보정력 적용
+        {
+            Vector2 correctionForce = ropeDirection * ropeForce * (distance - initialLength);
+            AddForce(correctionForce);
+            
+            Debug.Log($"[ROPE CORRECTION] Strong pull force applied: {correctionForce}");
+        }
+        
+        // 2. 회전 가속도 (접선 방향)
+        if (player != null)
+        {
+            Vector2 tangentDirection = new Vector2(ropeDirection.y, -ropeDirection.x);
+            float horizontalInput = player.moveInput;
+            Vector2 swingForce = tangentDirection * (horizontalInput * swingAcceleration);
+            
+            Debug.Log($"[ROPE SWING] Player moveInput: {horizontalInput:F2}, Tangent dir: {tangentDirection}, Swing force: {swingForce}");
+            
+            if (Mathf.Abs(horizontalInput) > 0.01f)
+            {
+                AddForce(swingForce);
+            }
+        }
+        
+        Debug.Log($"[ROPE CONSTRAINT] Current: {distance:F2}, Max allowed: {initialLength:F2}, Constraint active: {distance > initialLength}");
     }
     
     // 웹 부착 시 플레이어의 속도를 조정하는 함수
@@ -264,17 +294,14 @@ public class Web : MonoBehaviour
         // 속도를 웹 방향과 접선 방향으로 분해
         float radialVelocity = Vector2.Dot(playerVelocity, webDirection); // 웹 방향 속도
         float tangentialVelocity = Vector2.Dot(playerVelocity, tangentDirection); // 접선 방향 속도
-        
-        // 접선 방향 속도를 80% 감소 (에너지 손실)
-        tangentialVelocity *= reducedTangentSpeed; // 20%만 유지
+
+        // 거미줄의 접선 방향 속도를 80% 감소 (에너지 손실)
+        if(!isRope) tangentialVelocity *= reducedTangentSpeed; // 20%만 유지
         
         // 조정된 속도를 다시 합성
         Vector2 newVelocity = radialVelocity * webDirection + tangentialVelocity * tangentDirection;
         
         player.velocity = newVelocity;
-        
-        Debug.Log($"Web attached - Original velocity: {playerVelocity} → Adjusted velocity: {newVelocity}");
-        Debug.Log($"Radial: {radialVelocity:F2}, Tangential: {tangentialVelocity:F2}");
     }
 
     void OnDestroy()
