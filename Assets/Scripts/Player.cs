@@ -8,20 +8,21 @@ public class Player : MonoBehaviour
     public float groundAccel = 60f;
     public float airAccel = 30f;
     public float jumpSpeed = 12f;
-    private float maxVelocity = 45f;
+    public float maxVelocity = 45f;
     public Web currentWeb;
     public bool isGrounded = false;
     public bool isDead = false;
     public Vector2 position;
     public Vector2 velocity;
     public Vector2 acceleration;
-    private float gravity = -30f;
-    private float moveInput = 0f; // 입력값 저장
+    public float moveInput = 0f; // 입력값 저장 (Web.cs에서 접근 가능)
     private bool jumpPressed = false; // 점프 입력 저장
     private float jumpBufferTimer = 0f; // 점프 버퍼 타이머
     private const float jumpBufferTime = 0.1f; // 버퍼 지속 시간(초)
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
+
+    private const bool isDebugMode = true; // 디버그 모드 여부 (개발 중에만 사용)
 
     // --- Unity Methods ---
     void Start()
@@ -29,6 +30,10 @@ public class Player : MonoBehaviour
         position = transform.position;
         velocity = Vector2.zero;
         acceleration = Vector2.zero;
+        if(isDebugMode)
+        {
+            Time.timeScale = 0.3f; // 디버그 모드에서는 시간 흐름을 느리게 설정
+        }
     }
 
     void Update()
@@ -259,6 +264,14 @@ public class Player : MonoBehaviour
         if (isDead) return;
         float targetSpeed = moveInput * maxMoveSpeed;
         float accel = isGrounded ? groundAccel : airAccel;
+        
+        // 로프 사용 중일 때는 수평 제어력 비활성화 (Web.cs에서 접선 가속도로 대체)
+        if (currentWeb != null && currentWeb.isAttached && currentWeb.isRope)
+        {
+            Debug.Log($"[PLAYER] Rope attached - Horizontal control disabled, using tangential acceleration instead");
+            accel = 0; // 제거
+        }
+        
         velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accel * Time.fixedDeltaTime);
     }
 
@@ -282,7 +295,7 @@ public class Player : MonoBehaviour
     {
         if (isDead) return;
         if (!isGrounded)
-            velocity.y += gravity * Time.fixedDeltaTime;
+            velocity.y += GameManager.gravity * Time.fixedDeltaTime;
     }
 
     void ClampVelocity()
