@@ -7,6 +7,7 @@ public class Player : MonoBehaviour
     public float maxMoveSpeed = 10f;
     public float groundAccel = 60f;
     public float airAccel = 30f;
+    public float ropeAccel = 10f; // 로프 사용 시 가속
     public float jumpSpeed = 12f;
     public float maxVelocity = 45f;
     public Web currentWeb;
@@ -22,7 +23,7 @@ public class Player : MonoBehaviour
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
 
-    private const bool isDebugMode = true; // 디버그 모드 여부 (개발 중에만 사용)
+    private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
 
     // --- Unity Methods ---
     void Start()
@@ -265,11 +266,18 @@ public class Player : MonoBehaviour
         float targetSpeed = moveInput * maxMoveSpeed;
         float accel = isGrounded ? groundAccel : airAccel;
         
-        // 로프 사용 중일 때는 수평 제어력 비활성화 (Web.cs에서 접선 가속도로 대체)
+        // 로프 사용 중일 때는 감속 금지, 제한된 가속만 허용
         if (currentWeb != null && currentWeb.isAttached && currentWeb.isRope)
         {
-            Debug.Log($"[PLAYER] Rope attached - Horizontal control disabled, using tangential acceleration instead");
-            accel = 0; // 제거
+            accel = ropeAccel;
+            float currentSpeedX = Mathf.Abs(velocity.x);
+
+            // 현재 속도가 targetSpeed보다 작고, 가속하려는 경우에만 허용
+            if (currentSpeedX > targetSpeed)
+            {
+                accel = 0; // 가/감속 차단
+                Debug.Log($"[PLAYER] Rope acceleration blocked - Current: {velocity.x:F2}, Target: {targetSpeed:F2}");
+            }
         }
         
         velocity.x = Mathf.MoveTowards(velocity.x, targetSpeed, accel * Time.fixedDeltaTime);
