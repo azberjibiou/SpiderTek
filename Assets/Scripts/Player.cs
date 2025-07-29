@@ -7,11 +7,14 @@ public class Player : MonoBehaviour
     public float maxMoveSpeed = 10f;
     public float groundAccel = 60f;
     public float airAccel = 30f;
-    public float ropeAccel = 10f; // 로프 사용 시 가속
-    public float jumpSpeed = 12f;
+    public float ropeAccel = 15f; // 로프 사용 시 가속
+    public float jumpSpeed = 18f;
     public float maxVelocity = 45f;
     public Web currentWeb;
     public bool isGrounded = false;
+    public bool isWalledLeft = false;   // 왼쪽 벽에 닿아있는지
+    public bool isWalledRight = false;  // 오른쪽 벽에 닿아있는지
+    public bool isCeilinged = false;    // 천장에 닿아있는지
     public bool isDead = false;
     public Vector2 position;
     public Vector2 velocity;
@@ -23,7 +26,7 @@ public class Player : MonoBehaviour
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
 
-    private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
+    private const bool isDebugMode = true; // 디버그 모드 여부 (개발 중에만 사용)
 
     // --- Unity Methods ---
     void Start()
@@ -33,7 +36,7 @@ public class Player : MonoBehaviour
         acceleration = Vector2.zero;
         if(isDebugMode)
         {
-            Time.timeScale = 0.3f; // 디버그 모드에서는 시간 흐름을 느리게 설정
+            Time.timeScale = 0.1f; // 디버그 모드에서는 시간 흐름을 느리게 설정
         }
     }
 
@@ -44,18 +47,80 @@ public class Player : MonoBehaviour
 
     void FixedUpdate()
     {
-        UpdateGrounded();
+        UpdateCollisionStates();
         UpdateHorizontal();
         UpdateJumpBuffer();
         UpdateJump();
         ApplyGravity();
         ClampVelocity();
         ApplyPositionWithCollision();
+        //Debug.Log($"[PLAYER] Position: {position}, Velocity: {velocity}, Grounded: {isGrounded}");
     }
     // --- Collision Handling ---
+    void UpdateCollisionStates()
+    {
+        Vector2 center = transform.position;
+        float halfWidth = playerBoxSizeX * 0.5f;
+        float halfHeight = playerBoxSizeY * 0.5f;
+        float checkDistance = 0.1f; // 체크할 거리
+        
+        // 아래 (바닥) 체크 - OverlapBox로 영역 전체 검사
+        Vector2 bottomCheckPos = center + Vector2.down * (halfHeight + checkDistance * 0.5f);
+        Vector2 bottomCheckSize = new Vector2(playerBoxSizeX * 0.8f, checkDistance);
+        Collider2D bottomHit = Physics2D.OverlapBox(bottomCheckPos, bottomCheckSize, 0f);
+        isGrounded = (bottomHit != null && IsBlockCollider(bottomHit));
+        
+        // 위 (천장) 체크 - OverlapBox로 영역 전체 검사
+        Vector2 topCheckPos = center + Vector2.up * (halfHeight + checkDistance * 0.5f);
+        Vector2 topCheckSize = new Vector2(playerBoxSizeX * 0.8f, checkDistance);
+        Collider2D topHit = Physics2D.OverlapBox(topCheckPos, topCheckSize, 0f);
+        isCeilinged = (topHit != null && IsBlockCollider(topHit));
+        
+        // 왼쪽 벽 체크 - OverlapBox로 영역 전체 검사
+        Vector2 leftCheckPos = center + Vector2.left * (halfWidth + checkDistance * 0.5f);
+        Vector2 leftCheckSize = new Vector2(checkDistance, playerBoxSizeY * 0.8f);
+        Collider2D leftHit = Physics2D.OverlapBox(leftCheckPos, leftCheckSize, 0f);
+        isWalledLeft = (leftHit != null && IsBlockCollider(leftHit));
+        
+        // 오른쪽 벽 체크 - OverlapBox로 영역 전체 검사
+        Vector2 rightCheckPos = center + Vector2.right * (halfWidth + checkDistance * 0.5f);
+        Vector2 rightCheckSize = new Vector2(checkDistance, playerBoxSizeY * 0.8f);
+        Collider2D rightHit = Physics2D.OverlapBox(rightCheckPos, rightCheckSize, 0f);
+        isWalledRight = (rightHit != null && IsBlockCollider(rightHit));
+        
+        // 디버그 로그 (필요시)
+        if (isDebugMode && (isWalledLeft || isWalledRight || isCeilinged))
+        {
+            Debug.Log($"[COLLISION_STATE] Ground: {isGrounded}, Ceiling: {isCeilinged}, Left: {isWalledLeft}, Right: {isWalledRight}");
+        }
+    }
+    
+    bool IsBlockCollider(Collider2D collider)
+    {
+        return collider.gameObject.CompareTag("Block") || collider.gameObject.name.Contains("Block");
+    }
+
     void ApplyPositionWithCollision()
     {
         if (isDead) return;
+
+        // 0. 충돌 상태에 따라 속도 제한
+        if (isGrounded && velocity.y < 0f)
+        {
+            velocity.y = 0f; // 바닥에 닿았을 때 아래로 떨어지지 않도록
+        }
+        if (isCeilinged && velocity.y > 0f)
+        {
+            velocity.y = 0f; // 천장에 닿았을 때 위로 올라가지 않도록
+        }
+        if (isWalledLeft && velocity.x < 0f)
+        {
+            velocity.x = 0f; // 왼쪽 벽에 닿았을 때 왼쪽으로 이동하지 않도록
+        }
+        if (isWalledRight && velocity.x > 0f)
+        {
+            velocity.x = 0f; // 오른쪽 벽에 닿았을 때 오른쪽으로 이동하지 않도록
+        }
         
         // 1. 일단 이동!
         Vector2 deltaPosition = velocity * Time.fixedDeltaTime;
@@ -66,7 +131,8 @@ public class Player : MonoBehaviour
         // 2. 충돌 검사
         Vector2 boxSize = new Vector2(playerBoxSizeX, playerBoxSizeY);
         Collider2D[] hits = Physics2D.OverlapBoxAll(transform.position, boxSize, 0f);
-        
+
+
         bool hasBlockCollision = false;
         
         foreach (var col in hits)
@@ -94,50 +160,76 @@ public class Player : MonoBehaviour
             }
         }
         
-        // 3. 블록 충돌이 있으면 separation axis 사용
+        // 3. 블록 충돌이 있으면 raycast로 정확한 위치 찾기
         if (hasBlockCollision)
         {
-            HandleBlockCollisionWithSeparationAxis(previousPosition, deltaPosition);
+            HandleBlockCollision(previousPosition, deltaPosition);
         }
     }
 
-    void HandleBlockCollisionWithSeparationAxis(Vector2 previousPosition, Vector2 deltaPosition)
+    void HandleBlockCollision(Vector2 previousPosition, Vector2 deltaPosition)
     {
-        // X축 먼저 시도
+        // 원래 위치로 돌아가기
         position = previousPosition;
-        position.x += deltaPosition.x; // X축만 이동
         transform.position = position;
-        
-        if (CheckBlockCollision())
+
+        // 이동 방향과 거리
+        Vector2 direction = deltaPosition.normalized;
+        float distance = deltaPosition.magnitude;
+        Vector2 boxSize = new Vector2(playerBoxSizeX, playerBoxSizeY);
+
+        // BoxCast는 플레이어 중심에서 시작 (박스 자체가 이동하므로 오프셋 불필요)
+        RaycastHit2D hit = Physics2D.BoxCast(
+            previousPosition,            // 플레이어 중심에서 시작
+            boxSize,                     // 박스 크기
+            0f,                          // 회전
+            direction,                   // 방향
+            distance,                    // 원래 이동 거리
+            LayerMask.GetMask("Default") // 레이어
+        );
+
+        if (hit.collider != null)
         {
-            // X축 충돌 - 이전 X 위치로 복원하고 X 속도 제거
-            position.x = previousPosition.x;
-            velocity.x = 0f;
+            // 중심에서 충돌점까지의 거리보다 조금 덜 이동 (여유 공간 확보)
+            float safeDistance = Mathf.Max(0f, hit.distance - 0.1f);
+            position = previousPosition + direction * safeDistance;
+            Debug.Log($"[COLLISION] Hit at {hit.point} - Hit distance: {hit.distance:F3}, Safe distance: {safeDistance:F3}");
+            Debug.Log($"[COLLISION] Previous position: {previousPosition}, New position: {position}");
             transform.position = position;
-        }
-        
-        // Y축 이동
-        position.y += deltaPosition.y;
-        transform.position = position;
-        
-        if (CheckBlockCollision())
-        {
-            // Y축 충돌 - 이전 Y 위치로 복원
-            position.y = previousPosition.y;
-            
-            if (velocity.y <= 0f)
+
+            // hit.normal을 사용해서 속도를 수직이 되도록 보정
+            Vector2 normal = hit.normal;
+            velocity = ReflectVelocityWithNormal(velocity, normal);
+
+            // 바닥 충돌인지 확인 (normal이 위쪽을 향하면 바닥)
+            if (normal.y > 0.7f)
             {
-                // 바닥 충돌 (착지)
-                velocity.y = 0f;
                 isGrounded = true;
+                Debug.Log($"[COLLISION] grounded ok - Normal: {normal}");
             }
             else
             {
-                // 천장 충돌
-                velocity.y = 0f;
+                isGrounded = false;
             }
-            transform.position = position;
         }
+
+        Collider2D[] hits = Physics2D.OverlapBoxAll(transform.position, boxSize, 0f);
+        Debug.Log($"[COLLISION] hits({transform.position}, {boxSize}): {hits.Length}");
+
+    }
+
+    /// <summary>
+    /// velocity가 normal과 수직이 되도록 보정 (벽을 따라 미끄러지기)
+    /// </summary>
+    Vector2 ReflectVelocityWithNormal(Vector2 velocity, Vector2 normal)
+    {
+        // normal과 수직인 성분만 제거
+        // 공식: newVelocity = velocity - (velocity · normal) * normal
+        float dotProduct = Vector2.Dot(velocity, normal);
+        Vector2 newVelocity = velocity - dotProduct * normal;
+        
+        Debug.Log($"[PHYSICS] Velocity correction - Original: {velocity}, Normal: {normal}, Dot: {dotProduct:F2}, New: {newVelocity}");
+        return newVelocity;
     }
 
     bool CheckBlockCollision()
@@ -252,12 +344,8 @@ public class Player : MonoBehaviour
 
     void UpdateGrounded()
     {
-        float rayLength = 0.1f;
-        Vector2 origin = (Vector2)transform.position + Vector2.down * 0.5f;
-        RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, rayLength);
-        isGrounded = (hit.collider != null && 
-                     (hit.collider.gameObject.CompareTag("Block") || 
-                      hit.collider.gameObject.name.Contains("Block")));
+        // 이 함수는 UpdateCollisionStates()로 대체되었으므로 제거하거나 비워둡니다
+        // 기존 코드는 UpdateCollisionStates()에서 처리됩니다
     }
 
     void UpdateHorizontal()
@@ -302,8 +390,9 @@ public class Player : MonoBehaviour
     void ApplyGravity()
     {
         if (isDead) return;
-        if (!isGrounded)
-            velocity.y += GameManager.gravity * Time.fixedDeltaTime;
+        if (currentWeb != null && currentWeb.isAttached && !currentWeb.isRope) // 현재 거미줄이 있으면 중력 작용 안 함
+            return;
+        velocity.y += GameManager.gravity * Time.fixedDeltaTime;
     }
 
     void ClampVelocity()
