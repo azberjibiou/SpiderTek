@@ -18,7 +18,7 @@ public class Web : MonoBehaviour
     private const float ropeForce = 100f;      // 로프의 제약력 (강함)
     private const float webForce = 300f;       // 거미줄의 장력 (강함)
     private const float springConstant = 100f;  // 로프의 용수철 상수 (k)
-    private const float swingAcceleration = 0f; // 로프 스윙 시 접선 가속도
+    private const float swingAcceleration = 15f; // 로프 스윙 시 접선 가속도
     private const float minWebLength = 2f;     // 최소 거미줄 길이 (이하면 파괴)
     private const float reducedTangentSpeed = 0.2f; // 접선 속도 감소 비율 (20% 유지)
     
@@ -267,7 +267,7 @@ public class Web : MonoBehaviour
         {
             Vector2 tangentDirection = new Vector2(ropeDirection.y, -ropeDirection.x);
             float horizontalInput = player.moveInput;
-            Vector2 swingForce = tangentDirection * (horizontalInput * swingAcceleration);
+            Vector2 swingForce = tangentDirection * (1.2f * horizontalInput * swingAcceleration);
             
             Debug.Log($"[ROPE SWING] Player moveInput: {horizontalInput:F2}, Tangent dir: {tangentDirection}, Swing force: {swingForce}");
             
