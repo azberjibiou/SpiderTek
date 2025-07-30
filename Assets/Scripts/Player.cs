@@ -26,7 +26,7 @@ public class Player : MonoBehaviour
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
 
-    private const bool isDebugMode = true; // 디버그 모드 여부 (개발 중에만 사용)
+    private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
 
     // --- Unity Methods ---
     void Start()
@@ -340,12 +340,6 @@ public class Player : MonoBehaviour
     {
         velocity.y = jumpSpeed;
         isGrounded = false;
-    }
-
-    void UpdateGrounded()
-    {
-        // 이 함수는 UpdateCollisionStates()로 대체되었으므로 제거하거나 비워둡니다
-        // 기존 코드는 UpdateCollisionStates()에서 처리됩니다
     }
 
     void UpdateHorizontal()
