@@ -20,13 +20,19 @@ public class Player : MonoBehaviour
     public Vector2 velocity;
     public Vector2 acceleration;
     public float moveInput = 0f; // 입력값 저장 (Web.cs에서 접근 가능)
+    
+    public AudioClip shootSound; // 거미줄 발사 효과음
+    public AudioClip ropeShootSound; // 로프 발사 효과음
+
     private bool jumpPressed = false; // 점프 입력 저장
     private float jumpBufferTimer = 0f; // 점프 버퍼 타이머
     private const float jumpBufferTime = 0.1f; // 버퍼 지속 시간(초)
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
 
-    private const bool isDebugMode = true; // 디버그 모드 여부 (개발 중에만 사용)
+    private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
+    
+    private AudioSource audioSource; // 효과음 재생용 스피커
 
     // --- Unity Methods ---
     void Start()
@@ -34,6 +40,8 @@ public class Player : MonoBehaviour
         position = transform.position;
         velocity = Vector2.zero;
         acceleration = Vector2.zero;
+        audioSource = GetComponent<AudioSource>(); // 이 줄이 가장 중요합니다.
+
         if(isDebugMode)
         {
             Time.timeScale = 0.1f; // 디버그 모드에서는 시간 흐름을 느리게 설정
@@ -417,6 +425,21 @@ public class Player : MonoBehaviour
     {
         // 이미 웹이 있으면 무시
         if (currentWeb != null) return;
+
+        // 발사 사운드 재생
+        if (audioSource != null)
+        {
+            if (isRope && ropeShootSound != null)
+            {
+                // 로프일 경우 로프 사운드 재생
+                audioSource.PlayOneShot(ropeShootSound);
+            }
+            else if (!isRope && shootSound != null)
+            {
+                // 거미줄일 경우 거미줄 사운드 재생
+                audioSource.PlayOneShot(shootSound);
+            }
+        }
         
         // 마우스 위치(월드 좌표) - 새로운 Input System
         Vector3 mouseScreenPos = Mouse.current.position.ReadValue();
