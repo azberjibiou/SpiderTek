@@ -350,12 +350,6 @@ public class Player : MonoBehaviour
         isGrounded = false;
     }
 
-    void UpdateGrounded()
-    {
-        // 이 함수는 UpdateCollisionStates()로 대체되었으므로 제거하거나 비워둡니다
-        // 기존 코드는 UpdateCollisionStates()에서 처리됩니다
-    }
-
     void UpdateHorizontal()
     {
         if (isDead) return;
