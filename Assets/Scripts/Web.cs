@@ -33,21 +33,77 @@ public class Web : MonoBehaviour
     // --- Unity Methods ---
     void Start()
     {
-        // LineRenderer 컴포넌트 추가 (거미줄/로프 시각화)
-        lineRenderer = gameObject.AddComponent<LineRenderer>();
-        lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
-        
-        // 색상 설정 (startColor와 endColor 사용)
-        Color webColor = isRope ? Color.red : Color.blue; // 임시로 파란색(거미줄), 빨간색(로프)
-        lineRenderer.startColor = webColor;
-        lineRenderer.endColor = webColor;
-        
-        lineRenderer.startWidth = 0.05f;
-        lineRenderer.endWidth = 0.05f;
-        lineRenderer.positionCount = 2;
-        
         // Player 찾기
         player = FindObjectOfType<Player>();
+        if (player != null)
+        {
+            player.currentWeb = this;
+        }
+        
+        // LineRenderer 설정
+        SetupLineRenderer();
+    }
+    
+    void SetupLineRenderer()
+    {
+        // LineRenderer 컴포넌트 추가
+        lineRenderer = gameObject.AddComponent<LineRenderer>();
+        lineRenderer.positionCount = 2;
+        lineRenderer.useWorldSpace = true;
+        lineRenderer.sortingOrder = 5;
+        
+        if (isRope)
+        {
+            // 로프: 연속된 갈색 줄 (두껍게)
+            lineRenderer.startWidth = 0.08f;
+            lineRenderer.endWidth = 0.08f;
+            lineRenderer.startColor = new Color(0.6f, 0.4f, 0.2f, 1f);
+            lineRenderer.endColor = new Color(0.6f, 0.4f, 0.2f, 1f);
+            
+            // 로프 텍스처 로드
+            Texture2D ropeTexture = Resources.Load<Texture2D>("WebTextures/rope");
+            if (ropeTexture != null)
+            {
+                Material ropeMaterial = new Material(Shader.Find("Sprites/Default"));
+                ropeMaterial.mainTexture = ropeTexture;
+                ropeMaterial.mainTextureScale = new Vector2(3f, 1f); // 로프 패턴 반복
+                lineRenderer.material = ropeMaterial;
+                
+                Debug.Log("[WEB] Rope texture loaded successfully!");
+            }
+            else
+            {
+                Debug.LogWarning("[WEB] Rope texture not found in Resources/WebTextures/rope");
+                // 텍스처가 없으면 기본 Material 사용
+                lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+            }
+        }
+        else
+        {
+            // 거미줄: 점선 텍스처 적용 (더 두껍게)
+            lineRenderer.startWidth = 0.12f;
+            lineRenderer.endWidth = 0.12f;
+            lineRenderer.startColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+            lineRenderer.endColor = new Color(0.9f, 0.9f, 0.9f, 1f);
+            
+            // 점선 텍스처 로드
+            Texture2D webTexture = Resources.Load<Texture2D>("WebTextures/spiderweb");
+            if (webTexture != null)
+            {
+                Material webMaterial = new Material(Shader.Find("Sprites/Default"));
+                webMaterial.mainTexture = webTexture;
+                webMaterial.mainTextureScale = new Vector2(2f, 1f); // 점선을 더 크게 (반복 줄임)
+                lineRenderer.material = webMaterial;
+                
+                Debug.Log("[WEB] Spiderweb texture loaded successfully!");
+            }
+            else
+            {
+                Debug.LogWarning("[WEB] Spiderweb texture not found in Resources/WebTextures/spiderweb");
+                // 텍스처가 없으면 기본 Material 사용
+                lineRenderer.material = new Material(Shader.Find("Sprites/Default"));
+            }
+        }
     }
     
     void Update()

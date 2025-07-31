@@ -30,7 +30,7 @@ public class Player : MonoBehaviour
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
 
-    private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
+    private const bool isDebugMode = true; // 디버그 모드 여부 (개발 중에만 사용)
     
     private AudioSource audioSource; // 효과음 재생용 스피커
     private Animator playerAnimator;
@@ -50,7 +50,7 @@ public class Player : MonoBehaviour
 
         if(isDebugMode)
         {
-            Time.timeScale = 0.5f; // 디버그 모드에서는 시간 흐름을 느리게 설정
+            Time.timeScale = 0.2f; // 디버그 모드에서는 시간 흐름을 느리게 설정
         }
     }
 
@@ -266,6 +266,18 @@ public class Player : MonoBehaviour
 
     void Die()
     {
+        if (isDead) return; // 이미 죽었으면 중복 실행 방지
+        
+        isDead = true;
+        velocity = Vector2.zero; // 속도 정지
+        
+        // 죽을 때 웹/로프 끊기
+        if (currentWeb != null)
+        {
+            CancelWeb();
+            Debug.Log("[PLAYER] Web canceled due to death");
+        }
+        
         // GameManager에서 사망 처리
         GameManager gameManager = FindObjectOfType<GameManager>();
         if (gameManager != null)
