@@ -62,6 +62,13 @@ public class Player : MonoBehaviour
 
     void FixedUpdate()
     {
+        // 일시정지 상태에서는 물리 업데이트 중단
+        GameManager gameManager = GameManager.Instance;
+        if (gameManager != null && gameManager.isPaused)
+        {
+            return;
+        }
+        
         UpdateCollisionStates();
         UpdateHorizontal();
         UpdateJumpBuffer();
@@ -321,6 +328,14 @@ public class Player : MonoBehaviour
     // --- Input Handling ---
     void HandleInput()
     {
+        // 일시정지 상태에서는 입력 무시
+        GameManager gameManager = GameManager.Instance;
+        if (gameManager != null && gameManager.isPaused)
+        {
+            moveInput = 0f; // 움직임 입력 초기화
+            return;
+        }
+        
         // 좌/우 이동 입력값 저장만 (새로운 Input System)
         float horizontal = 0f;
         if (Keyboard.current.aKey.isPressed || Keyboard.current.leftArrowKey.isPressed)
@@ -353,20 +368,6 @@ public class Player : MonoBehaviour
         if (Keyboard.current.sKey.wasPressedThisFrame)
         {
             CancelWeb();
-        }
-        
-        // ESC (일시정지)
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            // GameManager에서 일시정지 처리
-            GameManager gameManager = FindObjectOfType<GameManager>();
-            if (gameManager != null)
-            {
-                if (gameManager.isPaused)
-                    gameManager.Resume();
-                else
-                    gameManager.Pause();
-            }
         }
     }
 

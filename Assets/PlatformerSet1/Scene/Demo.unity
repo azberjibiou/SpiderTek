@@ -7621,11 +7621,11 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 2365641191547187402, guid: 4ada148035821b241ad201a9b3b6753c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 371.1
+      value: -2.2
       objectReference: {fileID: 0}
     - target: {fileID: 2365641191547187402, guid: 4ada148035821b241ad201a9b3b6753c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 146.6
+      value: 39.5
       objectReference: {fileID: 0}
     - target: {fileID: 2365641191547187402, guid: 4ada148035821b241ad201a9b3b6753c, type: 3}
       propertyPath: m_LocalPosition.z
@@ -18557,6 +18557,8 @@ MonoBehaviour:
   isPaused: 0
   isPlayerDead: 0
   playerRespawnFrame: 0
+  musicVolume: 0.5
+  sfxVolume: 0.7
 --- !u!4 &1749093417
 Transform:
   m_ObjectHideFlags: 0
