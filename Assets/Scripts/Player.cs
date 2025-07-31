@@ -33,6 +33,8 @@ public class Player : MonoBehaviour
     private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
     
     private AudioSource audioSource; // 효과음 재생용 스피커
+    private Animator playerAnimator;
+    private SpriteRenderer playerSpriteRenderer;
 
     // --- Unity Methods ---
     void Start()
@@ -41,6 +43,10 @@ public class Player : MonoBehaviour
         velocity = Vector2.zero;
         acceleration = Vector2.zero;
         audioSource = GetComponent<AudioSource>(); // 이 줄이 가장 중요합니다.
+        
+        // 자식 오브젝트에서 애니메이터와 스프라이트 렌더러 찾기
+        playerAnimator = GetComponentInChildren<Animator>();
+        playerSpriteRenderer = GetComponentInChildren<SpriteRenderer>();
 
         if(isDebugMode)
         {
@@ -51,6 +57,7 @@ public class Player : MonoBehaviour
     void Update()
     {
         HandleInput();
+        UpdateAnimation(); // 애니메이션 업데이트 호출
     }
 
     void FixedUpdate()
@@ -420,6 +427,12 @@ public class Player : MonoBehaviour
         // 이미 웹이 있으면 무시
         if (currentWeb != null) return;
 
+        // 애니메이터 상태 변경
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetBool("IsWebbed", true);
+        }
+
         // 발사 사운드 재생
         if (audioSource != null)
         {
@@ -458,13 +471,54 @@ public class Player : MonoBehaviour
         }
     }
 
-    void CancelWeb()
+    public void CancelWeb()
     {
         // 현재 거미줄/로프가 있으면 삭제
         if (currentWeb != null)
         {
             Destroy(currentWeb.gameObject);
             currentWeb = null;
+
+            // 애니메이터 상태 변경
+            if (playerAnimator != null)
+            {
+                playerAnimator.SetBool("IsWebbed", false);
+            }
+        }
+    }
+
+    // --- Animation ---
+    void UpdateAnimation()
+    {
+        if (playerAnimator == null || playerSpriteRenderer == null) return;
+
+        // IsWebbed가 true이면 애니메이션 로직을 실행하지 않음
+        if (playerAnimator.GetBool("IsWebbed"))
+        {
+            playerAnimator.speed = 1f; // 매달리기 애니메이션은 계속 재생
+            return;
+        }
+        
+        // 1. 좌우 반전
+        // moveInput을 사용하여 즉각적으로 방향 전환
+        if (moveInput < -0.1f) // 왼쪽으로 이동
+        {
+            playerSpriteRenderer.flipX = true;
+        }
+        else if (moveInput > 0.1f) // 오른쪽으로 이동
+        {
+            playerSpriteRenderer.flipX = false;
+        }
+
+        // 2. 걷기 애니메이션 재생/정지
+        // isGrounded 조건 추가: 공중에 떠있을 때는 걷기 애니메이션을 멈춤
+        if (isGrounded && Mathf.Abs(velocity.x) > 0.1f)
+        {
+            playerAnimator.speed = 1f; // 움직일 때 재생
+        }
+        else
+        {
+            playerAnimator.speed = 0f; // 멈췄거나 공중일 때 정지
         }
     }
 }

@@ -77,8 +77,8 @@ SpriteRenderer:
   m_SortingLayerID: 0
   m_SortingLayer: 0
   m_SortingOrder: 0
-  m_Sprite: {fileID: 7482667652216324306, guid: 311925a002f4447b3a28927169b83ea6, type: 3}
-  m_Color: {r: 1, g: 0.25490198, b: 1, a: 1}
+  m_Sprite: {fileID: 1741575186, guid: 43bfa2b184972d548a99ff0ee9ab7a9f, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -103,10 +103,18 @@ MonoBehaviour:
   maxMoveSpeed: 10
   groundAccel: 60
   airAccel: 30
+  ropeAccel: 15
   jumpSpeed: 12
+  maxVelocity: 45
   currentWeb: {fileID: 0}
   isGrounded: 0
+  isWalledLeft: 0
+  isWalledRight: 0
+  isCeilinged: 0
   isDead: 0
   position: {x: 0, y: 0}
   velocity: {x: 0, y: 0}
   acceleration: {x: 0, y: 0}
+  moveInput: 0
+  shootSound: {fileID: 0}
+  ropeShootSound: {fileID: 0}

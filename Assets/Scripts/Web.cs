@@ -18,7 +18,7 @@ public class Web : MonoBehaviour
     private const float ropeForce = 100f;      // 로프의 제약력 (강함)
     private const float webForce = 200f;       // 거미줄의 장력 (강함)
     private const float springConstant = 100f;  // 로프의 용수철 상수 (k)
-    private const float swingAcceleration = 15f; // 로프 스윙 시 접선 가속도
+    private const float swingAcceleration = 18f; // 로프 스윙 시 접선 가속도
     private const float minWebLength = 2f;     // 최소 거미줄 길이 (이하면 파괴)
     private const float reducedTangentSpeed = 0.0f; // 접선 속도 감소 비율 (0% 유지)
 
@@ -71,7 +71,7 @@ public class Web : MonoBehaviour
                 // 거미줄이 너무 짧아지면 파괴
                 if (currentLength < minWebLength)
                 {
-                    Destroy(gameObject);
+                    if (player != null) player.CancelWeb();
                     return;
                 }
             }
@@ -124,7 +124,7 @@ public class Web : MonoBehaviour
         Debug.Log($"Extending web from {startPoint} to {endPoint}, current length: {currentLength:F2}, nextDestroy: {nextDestroy}");
         if (nextDestroy)
         {
-            Destroy(gameObject);
+            if (player != null) player.CancelWeb();
             return;
         }
         // 웹 발사체 이동
@@ -164,7 +164,7 @@ public class Web : MonoBehaviour
         // 최대 길이에 도달하면 웹 파괴
         if (currentLength >= maxLength)
         {
-            Destroy(gameObject);
+            if (player != null) player.CancelWeb();
             return;
         }
     }
@@ -289,7 +289,7 @@ public class Web : MonoBehaviour
         {
             Vector2 tangentDirection = new Vector2(ropeDirection.y, -ropeDirection.x);
             float horizontalInput = player.moveInput;
-            Vector2 swingForce = tangentDirection * (1.2f * horizontalInput * swingAcceleration);
+            Vector2 swingForce = tangentDirection * (horizontalInput * swingAcceleration);
             
             Debug.Log($"[ROPE SWING] Player moveInput: {horizontalInput:F2}, Tangent dir: {tangentDirection}, Swing force: {swingForce}");
             
@@ -328,10 +328,14 @@ public class Web : MonoBehaviour
 
     void OnDestroy()
     {
-        // 웹이 파괴될 때 플레이어의 currentWeb 참조 해제
+        // 이 함수는 player.CancelWeb()에서 Destroy()를 호출할 때 자동으로 실행됩니다.
+        // 따라서 player.currentWeb = null 같은 참조 해제 로직은
+        // player.CancelWeb() 안에 이미 있으므로 여기서는 특별한 작업이 필요 없습니다.
+        // 만약의 경우를 대비해 남겨둘 수는 있지만, 핵심 로직은 CancelWeb()으로 이전되었습니다.
         if (player != null && player.currentWeb == this)
         {
-            player.currentWeb = null;
+            // player.CancelWeb()이 호출되지 않은 예외적인 파괴 상황을 대비
+            // player.currentWeb = null; 
         }
     }
 }
