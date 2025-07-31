@@ -11,6 +11,12 @@ public class Checkpoint : MonoBehaviour
     private Color inactiveColor = Color.gray;
     private Color activeColor = Color.green;
     
+    // --- Audio ---
+    private AudioSource audioSource;
+    private AudioClip checkpointSound;
+    [Range(0f, 1f)]
+    public float soundVolume = 0.7f;
+    
     // --- Unity Methods ---
     void Start()
     {
@@ -20,6 +26,9 @@ public class Checkpoint : MonoBehaviour
         // 컴포넌트 초기화
         flagAnimator = GetComponent<Animator>();
         spriteRenderer = GetComponent<SpriteRenderer>();
+        
+        // 오디오 컴포넌트 설정
+        SetupAudio();
         
         // 초기 상태 설정
         UpdateVisualState();
@@ -79,8 +88,11 @@ public class Checkpoint : MonoBehaviour
             isActivated = true;
             UpdateVisualState();
             
-            // 활성화 효과 (예: 파티클, 사운드 등)
+            // 활성화 효과 (파티클, 사운드 등)
             PlayActivationEffect();
+            
+            // 체크포인트 사운드 재생 (첫 번째 활성화시에만)
+            PlayCheckpointSound();
             
             Debug.Log($"체크포인트 {gameObject.name} 활성화!");
         }
@@ -98,6 +110,43 @@ public class Checkpoint : MonoBehaviour
     }
     
     // --- Private Methods ---
+    private void SetupAudio()
+    {
+        // AudioSource 컴포넌트 추가/가져오기
+        audioSource = GetComponent<AudioSource>();
+        if (audioSource == null)
+        {
+            audioSource = gameObject.AddComponent<AudioSource>();
+        }
+        
+        // AudioSource 설정
+        audioSource.playOnAwake = false;
+        audioSource.volume = soundVolume;
+        audioSource.spatialBlend = 0f; // 2D 사운드
+        
+        // 체크포인트 사운드 로드
+        checkpointSound = Resources.Load<AudioClip>("Audio/SFX/checkpoint");
+        if (checkpointSound == null)
+        {
+            Debug.LogWarning("체크포인트 사운드를 찾을 수 없습니다: Resources/Audio/SFX/checkpoint");
+        }
+    }
+    
+    private void PlayCheckpointSound()
+    {
+        if (audioSource != null && checkpointSound != null)
+        {
+            audioSource.clip = checkpointSound;
+            audioSource.volume = soundVolume;
+            audioSource.Play();
+            Debug.Log("체크포인트 사운드 재생");
+        }
+        else
+        {
+            Debug.LogWarning("체크포인트 사운드를 재생할 수 없습니다");
+        }
+    }
+    
     private void UpdateVisualState()
     {
         // 스프라이트 색상 변경으로 활성화 상태 표시

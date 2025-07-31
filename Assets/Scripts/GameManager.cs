@@ -17,8 +17,14 @@ public class GameManager : MonoBehaviour
     public bool isPlayerDead = false;
     public int playerRespawnFrame = 0;
     
+    [Header("Audio Settings")]
+    public float musicVolume = 0.5f;
+    public float sfxVolume = 0.7f;
+    
     private Player player;
     private GameObject pauseUI;
+    private AudioSource musicSource;
+    private AudioSource sfxSource;
     private const int respawnDelay = 60; // 60프레임 = 1초 (60FPS 기준)
     
     // --- Unity Methods ---
@@ -44,6 +50,12 @@ public class GameManager : MonoBehaviour
         {
             playerStartPosition = player.transform.position;
         }
+
+        // 효과음용 AudioSource 설정
+        SetupSFXAudioSource();
+
+        // 씬별 배경음악 시작
+        StartBackgroundMusicForCurrentScene();
 
         // 일시정지 UI 찾기 (Canvas 하위의 PausePanel 등)
         GameObject canvas = GameObject.Find("Canvas");
@@ -92,6 +104,9 @@ public class GameManager : MonoBehaviour
         isPlayerDead = true;
         playerRespawnFrame = respawnDelay;
         
+        // 죽음 효과음 재생
+        PlayDeathSound();
+        
         // 플레이어 상태 변경
         if (player != null)
         {
@@ -139,7 +154,6 @@ public class GameManager : MonoBehaviour
     public void ActivateCheckpoint(Checkpoint checkpoint)
     {
         if (checkpoint == null) return;
-        
         // 이전 체크포인트 비활성화
         if (currentCheckpoint != null && currentCheckpoint != checkpoint)
         {
@@ -151,9 +165,6 @@ public class GameManager : MonoBehaviour
         checkpoint.ActivateCheckpoint();
         
         Debug.Log($"체크포인트 활성화: {checkpoint.gameObject.name}");
-        
-        // 체크포인트 활성화 효과
-        PlayCheckpointEffect();
     }
     
     public void Pause()
@@ -234,12 +245,6 @@ public class GameManager : MonoBehaviour
         Debug.Log("부활 효과 재생");
     }
     
-    private void PlayCheckpointEffect()
-    {
-        // 여기에 체크포인트 효과 구현 (사운드, UI 알림 등)
-        Debug.Log("체크포인트 효과 재생");
-    }
-    
     private System.Collections.IEnumerator CameraShake(float duration, float magnitude)
     {
         Camera cam = Camera.main;
@@ -259,5 +264,79 @@ public class GameManager : MonoBehaviour
         }
         
         cam.transform.position = originalPos;
+    }
+    
+    // --- Simple Music Management ---
+    void StartBackgroundMusicForCurrentScene()
+    {
+        string currentSceneName = SceneManager.GetActiveScene().name;
+        string musicFileName = "";
+        
+        // 씬별 음악 파일 설정
+        switch (currentSceneName)
+        {
+            case "FirstScene":
+                musicFileName = "Audio/Music/Reach for the Summit";
+                break;
+            case "Demo":
+                musicFileName = "Audio/Music/First step";
+                break;
+            default:
+                Debug.Log($"[MUSIC] No background music configured for scene: {currentSceneName}");
+                return;
+        }
+        
+        StartBackgroundMusic(musicFileName, currentSceneName);
+    }
+    
+    void StartBackgroundMusic(string musicPath, string sceneName)
+    {
+        // AudioSource 컴포넌트 추가
+        musicSource = gameObject.AddComponent<AudioSource>();
+        
+        // 음악 파일 로드
+        AudioClip gameMusic = Resources.Load<AudioClip>(musicPath);
+        if (gameMusic != null)
+        {
+            musicSource.clip = gameMusic;
+            musicSource.loop = true;
+            musicSource.volume = musicVolume;
+            musicSource.spatialBlend = 0f; // 2D 오디오
+            musicSource.Play();
+            
+            Debug.Log($"[MUSIC] Background music '{gameMusic.name}' started in {sceneName}");
+        }
+        else
+        {
+            Debug.LogWarning($"[MUSIC] Music file not found: {musicPath}");
+            Debug.LogWarning($"[MUSIC] Check if file exists at: Assets/Resources/{musicPath}.mp3");
+        }
+    }
+    
+    // --- Sound Effects Management ---
+    void SetupSFXAudioSource()
+    {
+        // 효과음 전용 AudioSource 생성
+        sfxSource = gameObject.AddComponent<AudioSource>();
+        sfxSource.loop = false;
+        sfxSource.volume = sfxVolume;
+        sfxSource.spatialBlend = 0f; // 2D 오디오
+        sfxSource.playOnAwake = false;
+    }
+    
+    void PlayDeathSound()
+    {
+        // Resources에서 죽음 효과음 로드
+        AudioClip deathSound = Resources.Load<AudioClip>("Audio/SFX/death");
+        if (deathSound != null && sfxSource != null)
+        {
+            sfxSource.PlayOneShot(deathSound);
+            Debug.Log("[SFX] Death sound played");
+        }
+        else
+        {
+            Debug.LogWarning("[SFX] Death sound not found at: Audio/SFX/death");
+            Debug.LogWarning("[SFX] Check if file exists at: Assets/Resources/Audio/SFX/death.mp3");
+        }
     }
 }

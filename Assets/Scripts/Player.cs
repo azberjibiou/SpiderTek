@@ -30,7 +30,7 @@ public class Player : MonoBehaviour
     private const float playerBoxSizeX = 0.8f; // 플레이어 콜라이더 가로 크기
     private const float playerBoxSizeY = 0.8f; // 플레이어 콜라이더 세로 크기
 
-    private const bool isDebugMode = true; // 디버그 모드 여부 (개발 중에만 사용)
+    private const bool isDebugMode = false; // 디버그 모드 여부 (개발 중에만 사용)
     
     private AudioSource audioSource; // 효과음 재생용 스피커
     private Animator playerAnimator;
