@@ -36,7 +36,7 @@ public class Player : MonoBehaviour
         acceleration = Vector2.zero;
         if(isDebugMode)
         {
-            Time.timeScale = 0.1f; // 디버그 모드에서는 시간 흐름을 느리게 설정
+            Time.timeScale = 0.5f; // 디버그 모드에서는 시간 흐름을 느리게 설정
         }
     }
 

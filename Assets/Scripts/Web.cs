@@ -18,7 +18,7 @@ public class Web : MonoBehaviour
     private const float ropeForce = 100f;      // 로프의 제약력 (강함)
     private const float webForce = 200f;       // 거미줄의 장력 (강함)
     private const float springConstant = 100f;  // 로프의 용수철 상수 (k)
-    private const float swingAcceleration = 0f; // 로프 스윙 시 접선 가속도
+    private const float swingAcceleration = 18f; // 로프 스윙 시 접선 가속도
     private const float minWebLength = 2f;     // 최소 거미줄 길이 (이하면 파괴)
     private const float reducedTangentSpeed = 0.0f; // 접선 속도 감소 비율 (0% 유지)
 
