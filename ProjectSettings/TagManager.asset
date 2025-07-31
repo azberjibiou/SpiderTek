@@ -7,6 +7,7 @@ TagManager:
   - Hazard
   - Block
   - Checkpoint
+  - Portal
   layers:
   - Default
   - TransparentFX
