@@ -172,6 +172,16 @@ public class Player : MonoBehaviour
                 {
                     ActivateCheckpoint(col.gameObject);
                 }
+                // Portal: 포탈 처리
+                else if (col.gameObject.CompareTag("Portal") || col.gameObject.name.Contains("Portal"))
+                {
+                    Portal portal = col.gameObject.GetComponent<Portal>();
+                    if (portal != null)
+                    {
+                        Debug.Log($"플레이어가 포탈에 닿았습니다! 씬 '{portal.nextSceneName}'으로 이동합니다.");
+                        UnityEngine.SceneManagement.SceneManager.LoadScene(portal.nextSceneName);
+                    }
+                }
             }
         }
         
